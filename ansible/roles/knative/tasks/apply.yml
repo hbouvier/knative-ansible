@@ -1,0 +1,28 @@
+---
+- name: Create knative CRDs.
+  command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - serving
+    - release
+  loop_control:
+    loop_var: filename
+  register: knative_crd
+  until: 'knative_crd.rc == 0'
+  retries: 15
+  delay: 1
+  # changed_when: False
+  changed_when: "' changed' in knative_crd.stdout"
+
+- name: debug
+  debug: var=knative_crd
+
+- name: Create knative serving, eventing and monitoring.
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - serving
+    - release
+    - monitoring
+  loop_control:
+    loop_var: filename

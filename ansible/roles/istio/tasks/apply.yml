@@ -1,0 +1,47 @@
+---
+# - name: Ensure temp exists.
+#   file:
+#     path: "{{ temp }}/istio"
+#     state: directory
+
+# - name: Render istio crd templates.
+#   template:
+#     src: "{{ filename }}.yaml"
+#     dest: "{{ temp }}/istio/{{ filename }}.yaml"
+#   with_items:
+#     - crd-10
+#     - crd-11
+#     - crd-12
+#     - crd-certmanager-10
+#     - crd-certmanager-11
+#     - istio-lean
+#     - istio-local-gateway
+#     - namespace
+#   loop_control:
+#     loop_var: filename
+
+- name: Create istio CRDs.
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+    # src: "{{ temp }}/istio/{{ filename }}.yaml"
+  with_items:
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  loop_control:
+    loop_var: filename
+
+- name: Create istio CRDs.
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+    # src: "{{ temp }}/istio/{{ filename }}.yaml"
+  with_items:
+    - namespace
+    - istio-lean
+    - istio-local-gateway
+  loop_control:
+    loop_var: filename

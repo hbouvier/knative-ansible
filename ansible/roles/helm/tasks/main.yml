@@ -1,0 +1,8 @@
+# - pip:
+#     name: openshift==0.9.2
+
+- include: apply.yml
+  when: mode == "apply"
+
+- include: clean.yml
+  when: mode == "clean"

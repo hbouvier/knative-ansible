@@ -1,0 +1,11 @@
+---
+- hosts: all
+  roles:
+    - role: helm
+      tags: [helm]
+    - role: istio
+      tags: [istio]
+    - role: knative
+      tags: [knative]
+    - role: kafka
+      tags: [kafka]

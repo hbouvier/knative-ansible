@@ -1,0 +1,29 @@
+---
+- name: Create kafka operator.
+  k8s:
+    state: present
+    namespace: kafka
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - kafka-namespace
+    - kafka-cluster-operator
+    - kafka-standalone
+  loop_control:
+    loop_var: filename
+
+- name: Wait for Kafka to be ready.
+  command: kubectl wait kafka/standalone --for=condition=Ready --timeout=300s -n kafka
+  register: kafka
+  # changed_when: False
+  # changed_when: "' changed' in knative_crd.stdout"
+
+- name: Knative eventing channel and source
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - kafka-channel
+    - kafka-source
+  loop_control:
+    loop_var: filename
+

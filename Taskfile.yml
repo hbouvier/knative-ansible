@@ -1,0 +1,54 @@
+version: '2'
+
+vars:
+  VERSION: v0.0.1
+
+tasks:
+  default:
+    deps: [activate]
+
+  clean:
+    cmds:
+      - rm -rf .env
+
+  setup-python:
+    deps: [venv]
+
+  install-virtualenv:
+    cmds:
+      - pip install virtualenv
+    status:
+      - which virtualenv > /dev/null 2>&1
+
+  dot-env:
+    deps: [install-virtualenv]
+    cmds:
+      - virtualenv -p $(which python3) .env
+    status:
+      - test -r .env
+  
+  venv:
+    deps: [dot-env]
+    cmds:
+      - /bin/sh -c '. .env/bin/activate && task setup-python'
+    status:
+      - pip -V | grep '/.env/' >/dev/null 2>&1
+
+  requirements:
+    deps: [venv]
+    cmds:
+      - pip install -r requirements.txt
+
+  activate:
+    deps: [requirements]
+    cmds:
+      - echo "Run 'source .env/bin/activate' first"
+      - exit 1
+    status:
+      - pip -V | grep '/.env/' >/dev/null 2>&1
+
+  dirs:
+    cmds:
+      - mkdir -p environments/local/group_vars
+      - mkdir -p group_vars library playbooks
+      - mkdir -p roles/istio/{tasks,templates}
