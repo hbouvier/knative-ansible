@@ -34,3 +34,16 @@ kubectl label namespace ${NAMESPACE}  istio-injection=enabled
 
 
 
+##
+
+```bash
+kubectl proxy >/dev/null 2>&1 &
+open http://localhost:8001/api/v1/namespaces/knative-monitoring/services/kibana-logging/proxy/app/kibana
+# echo "indice is zipkin:span-* not logstash-*"
+open http://localhost:8001/api/v1/namespaces/istio-system/services/zipkin:9411/proxy/zipkin/
+```
+
+```bash
+kubectl -n knative-monitoring port-forward svc/grafana 30802:30802
+open http://localhost:30802
+```
