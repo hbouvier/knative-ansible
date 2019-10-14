@@ -37,3 +37,5 @@ kubectl apply --selector knative.dev/crd-install=true \
  1769  clear ; ansible-playbook main.yml -i environments/local --tags knative
 
 
+####
+curl -v "http://default-broker.tutorial.svc.cluster.local/" -X POST -H "X-B3-Flags:1"  -H "ce-specversion:0.2" -H "ce-type: com.ruggedcode.chat.message.text" -H "ce-time:2018-04-05T03:56:24Z" -H "ce-id:45a8b444-3213-4758-be3f-54093f85ff" -H "ce-source: com.ruggedcode.chat.curl" -H 'Content-Type:application/json' -H 'ce-datacontenttype: application/json' -d '{"text":"voiture"}'

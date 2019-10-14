@@ -34,14 +34,19 @@
   loop_control:
     loop_var: filename
 
-- name: Create istio CRDs.
+- name: sleep for 30 seconds and continue with play
+  wait_for: timeout=30
+  delegate_to: localhost
+
+- name: Create istio.
   k8s:
     state: present
+    namespace: istio-system
     src: "{{ role_path }}/files/{{ filename }}.yaml"
     # src: "{{ temp }}/istio/{{ filename }}.yaml"
   with_items:
     - namespace
-    - istio-lean
+    - istio
     - istio-local-gateway
   loop_control:
     loop_var: filename

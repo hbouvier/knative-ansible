@@ -42,9 +42,9 @@
   # environment:
   #   HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
   register: helm_list_results
-  # until: 'helm_list_results.ok == 0'
-  # retries: 15
-  # delay: 1
+  until: 'helm_list_results.rc == 0'
+  retries: 15
+  delay: 1
   changed_when: False
 
 # - name: Install phpMyAdmin with Helm.

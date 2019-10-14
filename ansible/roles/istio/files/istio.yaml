@@ -43,7 +43,7 @@ spec:
       release: release-name
       app: istio-ingressgateway
       istio: ingressgateway
----
+
 
 ---
 # Source: istio/charts/mixer/templates/poddisruptionbudget.yaml
@@ -93,7 +93,7 @@ spec:
       release: release-name
       istio: mixer
       istio-mixer-type: telemetry
----
+
 
 ---
 # Source: istio/charts/pilot/templates/poddisruptionbudget.yaml
@@ -917,7 +917,7 @@ metadata:
     chart: gateways
     heritage: Tiller
     release: release-name
----
+
 
 
 ---
@@ -1406,7 +1406,7 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get", "watch", "list"]
----
+
 
 ---
 # Source: istio/charts/gateways/templates/rolebindings.yaml
@@ -1423,7 +1423,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: istio-ingressgateway-service-account
----
+
 
 ---
 # Source: istio/charts/galley/templates/service.yaml
@@ -1508,7 +1508,7 @@ spec:
       name: tls
       port: 15443
       targetPort: 15443
----
+
 
 ---
 # Source: istio/charts/mixer/templates/service.yaml
@@ -1564,7 +1564,7 @@ spec:
   selector:
     istio: mixer
     istio-mixer-type: telemetry
----
+
 
 
 ---
@@ -1972,7 +1972,7 @@ spec:
                 - "s390x"      
 ---
 
----
+
 # Source: istio/charts/mixer/templates/deployment.yaml
 
 apiVersion: apps/v1
@@ -2323,7 +2323,7 @@ spec:
         - name: uds-socket
           mountPath: /sock
 
---- 
+ 
 
 ---
 # Source: istio/charts/pilot/templates/deployment.yaml
@@ -2748,7 +2748,7 @@ spec:
       resource:
         name: cpu
         targetAverageUtilization: 80
----
+
 
 ---
 # Source: istio/charts/mixer/templates/autoscale.yaml
@@ -2800,7 +2800,7 @@ spec:
         targetAverageUtilization: 80
 ---
 
----
+
 # Source: istio/charts/pilot/templates/autoscale.yaml
 
 apiVersion: autoscaling/v2beta1
@@ -2827,7 +2827,7 @@ spec:
       targetAverageUtilization: 80
 ---
 
----
+
 # Source: istio/charts/sidecarInjectorWebhook/templates/mutatingwebhook.yaml
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -2862,47 +2862,6 @@ webhooks:
         operator: NotIn
         values:
         - disabled
-
-
----
-# Source: istio/charts/galley/templates/validatingwebhookconfiguration.yaml.tpl
-
-
----
-# Source: istio/charts/gateways/templates/preconfigured.yaml
-
-
----
-# Source: istio/charts/pilot/templates/meshexpansion.yaml
-
-
-
----
-# Source: istio/charts/security/templates/enable-mesh-mtls.yaml
-
-
----
-# Source: istio/charts/security/templates/enable-mesh-permissive.yaml
-
-
----
-# Source: istio/charts/security/templates/meshexpansion.yaml
-
-
----
-# Source: istio/charts/security/templates/tests/test-citadel-connection.yaml
-
-
----
-# Source: istio/templates/endpoints.yaml
-
-
----
-# Source: istio/templates/install-custom-resources.sh.tpl
-
-
----
-# Source: istio/templates/service.yaml
 
 
 ---
@@ -3115,8 +3074,8 @@ spec:
       valueType: STRING
     destination.workload.namespace:
       valueType: STRING
----
----
+
+
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: handler
@@ -3253,5 +3212,5 @@ spec:
       http:
         http2MaxRequests: 10000
         maxRequestsPerConnection: 10000
----
+
 
