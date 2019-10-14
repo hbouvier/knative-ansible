@@ -26,3 +26,21 @@
     - monitoring
   loop_control:
     loop_var: filename
+
+- name: Is kafka installed.
+  command: kubectl wait kafka/standalone --for=condition=Ready --timeout=30s -n kafka
+  register: kafka_installed
+  ignore_errors: yes
+  changed_when: False
+
+- name: Knative Kafka eventing channel and source
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - kafka-channel
+    - kafka-source
+  loop_control:
+    loop_var: filename
+  when: kafka_installed.rc == 0
+

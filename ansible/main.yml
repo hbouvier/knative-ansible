@@ -5,7 +5,7 @@
       tags: [helm]
     - role: istio
       tags: [istio]
-    - role: knative
-      tags: [knative]
     - role: kafka
       tags: [kafka]
+    - role: knative
+      tags: [knative]
