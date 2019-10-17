@@ -1,0 +1,6 @@
+---
+environment: gke
+
+gke_cluster_name: knative
+gke_zone: us-east1-b
+gke_project_name: ruggedcode

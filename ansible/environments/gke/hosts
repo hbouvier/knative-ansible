@@ -1,0 +1,5 @@
+[k8s]
+master ansible_connection=local ansible_host=127.0.0.1
+
+[k8s:vars]
+ansible_python_interpreter=${HOME}/src/knative/knative-ansible/.env/bin/python

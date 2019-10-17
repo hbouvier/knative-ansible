@@ -1,0 +1,47 @@
+---
+- name: set default project
+  command: gcloud config set core/project {{ gke_project_name }}
+  when: False
+
+- name: create GKE cluster
+  command: gcloud services enable \
+     cloudapis.googleapis.com \
+     container.googleapis.com \
+     containerregistry.googleapis.com
+  when: False
+
+- name: create k8s cluster
+  command: gcloud beta container clusters create {{ gke_cluster_name }} \
+    --addons=HorizontalPodAutoscaling,HttpLoadBalancing \
+    --machine-type=n1-standard-4 \
+    --cluster-version=latest --zone={{ gke_zone }} \
+    --enable-ip-alias \
+    --enable-autoscaling --min-nodes=1 --max-nodes=8 \
+    --enable-autorepair \
+    --enable-autoupgrade \
+    --num-nodes=1 \
+    --preemptible \
+    --scopes cloud-platform
+  when: False
+
+- name: sleep for 30 seconds and continue with play
+  wait_for: timeout=30
+  delegate_to: localhost
+  when: False
+
+- name: disable stackdriver
+  command: gcloud beta container clusters update {{ gke_cluster_name }}  --logging-service none --monitoring-service none --zone {{ gke_zone }}
+
+- name: sleep for 30 seconds and continue with play
+  wait_for: timeout=30
+  delegate_to: localhost
+
+- name: get account name
+  command: gcloud config get-value core/account
+  register: gke_account_name
+
+- name: create admin service account
+  command: kubectl create clusterrolebinding cluster-admin-binding \
+     --clusterrole=cluster-admin \
+     --user={{ gke_account_name.stdout }}
+

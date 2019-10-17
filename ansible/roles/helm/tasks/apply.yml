@@ -8,6 +8,12 @@
         name: tiller
         namespace: kube-system
 
+- name: cluster role binding
+  command: kubectl create clusterrolebinding tiller \
+    --clusterrole cluster-admin \
+    --serviceaccount=kube-system:tiller
+  when: False
+
 # - name: Apply Tiller RBAC definition.
 #   k8s:
 #     state: present

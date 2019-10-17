@@ -1,6 +1,8 @@
 ---
 - hosts: all
   roles:
+    - role: gke
+      tags: [gke]
     - role: helm
       tags: [helm]
     - role: istio
