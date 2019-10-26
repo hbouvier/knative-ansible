@@ -1,0 +1,28 @@
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: istio-ingressgateway-certs
+  namespace: istio-system
+spec:
+  secretName: istio-ingressgateway-certs
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "{{ knative_domain }}"
+  dnsNames:
+  - "{{ knative_domain }}"
+  - "*.fn.{{ knative_domain }}"
+  - "*.henri.{{ knative_domain }}"
+  - "*.public.{{ knative_domain }}"
+  - "*.tutorial.{{ knative_domain }}"
+  acme:
+    config:
+    - dns01:
+        provider: clouddns
+      domains:
+      - "{{ knative_domain }}"
+      - "*.fn.{{ knative_domain }}"
+      - "*.henri.{{ knative_domain }}"
+      - "*.public.{{ knative_domain }}"
+      - "*.tutorial.{{ knative_domain }}"

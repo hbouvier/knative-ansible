@@ -44,3 +44,27 @@
     loop_var: filename
   when: kafka_installed.rc == 0
 
+- name: Ensure /tmp/knative exists.
+  file:
+    path: "{{ temp }}/knative"
+    state: directory
+
+- name: Render letsencrypt Cluster Issuer template
+  template:
+    src: "{{ filename }}.yaml.j2"
+    dest: "{{ temp }}/knative/{{ filename }}.yaml"
+  with_items:
+    - config-domain
+    - ingress-gateway
+  loop_control:
+    loop_var: filename
+
+- name: Patch knative resources
+  k8s:
+    state: present
+    src: "{{ temp }}/knative/{{ filename }}.yaml"
+  with_items:
+    - config-domain
+    - ingress-gateway
+  loop_control:
+    loop_var: filename

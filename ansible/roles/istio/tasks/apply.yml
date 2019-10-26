@@ -1,30 +1,160 @@
 ---
-# - name: Ensure temp exists.
-#   file:
-#     path: "{{ temp }}/istio"
-#     state: directory
+- name: Ensure latest_istio_files_from_github exists.
+  file:
+    path: "{{ role_path }}/{{ item }}"
+    state: directory
+  with_items:
+    - latest_istio_files_from_github
+    - latest_istio_files_from_github/istio-{{ istio_version }}/config
 
-# - name: Render istio crd templates.
-#   template:
-#     src: "{{ filename }}.yaml"
-#     dest: "{{ temp }}/istio/{{ filename }}.yaml"
-#   with_items:
-#     - crd-10
-#     - crd-11
-#     - crd-12
-#     - crd-certmanager-10
-#     - crd-certmanager-11
-#     - istio-lean
-#     - istio-local-gateway
-#     - namespace
-#   loop_control:
-#     loop_var: filename
+- name: Do we already have the istio files
+  stat:
+    path: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio"
+  register: getLastestIstio
+
+- name: Download istio getLatestIstio script
+  get_url:
+    url: https://git.io/getLatestIstio
+    dest: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio"
+    mode: '0740'
+  when: getLastestIstio.stat.exists == False 
+
+- name: Execute istio getLatestIstio script
+  shell: "ISTIO_VERSION={{istio_version}} ./getLastestIstio"
+  args:
+    chdir: "{{ role_path }}/latest_istio_files_from_github"
+  when: getLastestIstio.stat.exists == False 
+
+- name: istio CRDS
+  shell: cp install/kubernetes/helm/istio-init/files/crd*yaml ./config/
+  args:
+    chdir: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}"
+  when: getLastestIstio.stat.exists == False 
+
+- name: Generate istio templates
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}"
+  with_items:
+    - helm template --namespace=istio-system
+        --set gateways.custom-gateway.autoscaleMin=1
+        --set gateways.custom-gateway.autoscaleMax=1
+        --set gateways.custom-gateway.cpu.targetAverageUtilization=60
+        --set gateways.custom-gateway.labels.app='cluster-local-gateway'
+        --set gateways.custom-gateway.labels.istio='cluster-local-gateway'
+        --set gateways.custom-gateway.type='ClusterIP'
+        --set gateways.istio-ingressgateway.enabled=false
+        --set gateways.istio-egressgateway.enabled=false
+        --set gateways.istio-ilbgateway.enabled=false
+        install/kubernetes/helm/istio
+        -f install/kubernetes/helm/istio/example-values/values-istio-gateways.yaml | sed -e "s/custom-gateway/cluster-local-gateway/g" -e "s/customgateway/clusterlocalgateway/g" > ./config/istio-local-gateway.yaml
+    - helm template --namespace=istio-system
+        --set sidecarInjectorWebhook.enabled=true
+        --set sidecarInjectorWebhook.enableNamespacesByDefault=true
+        --set global.proxy.autoInject=disabled
+        --set global.disablePolicyChecks=true
+        --set prometheus.enabled=false
+        --set mixer.adapters.prometheus.enabled=false
+        --set global.disablePolicyChecks=true
+        --set gateways.istio-ingressgateway.autoscaleMin=1
+        --set gateways.istio-ingressgateway.autoscaleMax=2
+        --set gateways.istio-ingressgateway.resources.requests.cpu=500m
+        --set gateways.istio-ingressgateway.resources.requests.memory=256Mi
+        --set gateways.istio-ingressgateway.sds.enabled=true
+        --set pilot.autoscaleMin=2
+        --set pilot.traceSampling=100
+        install/kubernetes/helm/istio > ./config/istio-sds.yaml
+  when: getLastestIstio.stat.exists == False 
+
+- name: clean raw istio templates, remove comments
+  replace:
+    path: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ item }}.yaml"
+    regexp: '^#.*$'
+    replace: ''
+  with_items:
+    - istio-sds
+    - istio-local-gateway
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  when: getLastestIstio.stat.exists == False 
+
+- name: Add a sentinel value to allow us to remove the last yaml section
+  lineinfile:
+    path: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ item }}.yaml"
+    regexp: '^# EOF SENTINEL$'
+    line: "# EOF SENTINEL"
+  with_items:
+    - istio-sds
+    - istio-local-gateway
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  when: getLastestIstio.stat.exists == False 
+
+
+- name: clean raw istio templates, remove empty lines
+  replace:
+    path: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ item }}.yaml"
+    regexp: '^[\s\n]*$'
+    replace: ''
+  with_items:
+    - istio-sds
+    - istio-local-gateway
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  when: getLastestIstio.stat.exists == False 
+
+- name: clean raw istio templates, remove empty yaml sections
+  replace:
+    path: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ item }}.yaml"
+    regexp: '-{3}(?:-{3}|[\n\s]*)*-{3}'
+    replace: '---'
+  with_items:
+    - istio-sds
+    - istio-local-gateway
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  when: getLastestIstio.stat.exists == False 
+
+- name: clean raw istio templates, remove last empty yaml section (with the sentinel)
+  replace:
+    path: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ item }}.yaml"
+    regexp: '---[\n\s]*# EOF SENTINEL[\n\s]*$'
+    replace: ''
+  with_items:
+    - istio-sds
+    - istio-local-gateway
+    - crd-10
+    - crd-11
+    - crd-12
+    - crd-certmanager-10
+    - crd-certmanager-11
+  when: getLastestIstio.stat.exists == False 
+
+- name: Create istio namespace.
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - namespace
+  loop_control:
+    loop_var: filename
 
 - name: Create istio CRDs.
   k8s:
     state: present
-    src: "{{ role_path }}/files/{{ filename }}.yaml"
-    # src: "{{ temp }}/istio/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ filename }}.yaml"
   with_items:
     - crd-10
     - crd-11
@@ -38,15 +168,13 @@
   wait_for: timeout=30
   delegate_to: localhost
 
-- name: Create istio.
+- name: Create istio gateways.
   k8s:
     state: present
     namespace: istio-system
-    src: "{{ role_path }}/files/{{ filename }}.yaml"
-    # src: "{{ temp }}/istio/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}/config/{{ filename }}.yaml"
   with_items:
-    - namespace
-    - istio
+    - istio-sds
     - istio-local-gateway
   loop_control:
     loop_var: filename

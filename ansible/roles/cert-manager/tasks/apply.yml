@@ -1,0 +1,173 @@
+---
+
+- name: Do we already have the certmanager CRDS files
+  stat:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/cert-manager.yaml"
+  register: latest_certmanager_files_from_github
+
+- name: Ensure latest_certmanager_files_from_github exists.
+  file:
+    path: "{{ role_path }}/{{ item }}"
+    state: directory
+  with_items:
+    - latest_certmanager_files_from_github
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: Download certmanager CRDs
+  get_url:
+    url: https://github.com/jetstack/cert-manager/releases/download/{{ certmanager_version }}/cert-manager.yaml
+    dest: "{{ role_path }}/latest_certmanager_files_from_github/cert-manager.yaml"
+    mode: '0440'
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: clean raw istio templates, remove comments
+  replace:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    regexp: '^#.*$'
+    replace: ''
+  with_items:
+    - cert-manager
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: Add a sentinel value to allow us to remove the last yaml section
+  lineinfile:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    regexp: '^# EOF SENTINEL$'
+    line: "# EOF SENTINEL"
+  with_items:
+    - cert-manager
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+
+- name: clean raw istio templates, remove empty lines
+  replace:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    regexp: '^[\s\n]*$'
+    replace: ''
+  with_items:
+    - cert-manager
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: clean raw istio templates, remove empty yaml sections
+  replace:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    regexp: '-{3}(?:-{3}|[\n\s]*)*-{3}'
+    replace: '---'
+  with_items:
+    - cert-manager
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: clean raw istio templates, remove last empty yaml section (with the sentinel)
+  replace:
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    regexp: '---[\n\s]*# EOF SENTINEL[\n\s]*$'
+    replace: ''
+  with_items:
+    - cert-manager
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: Create certmanager namespace.
+  k8s:
+    state: present
+    src: "{{ role_path }}/files/{{ filename }}.yaml"
+  with_items:
+    - namespace
+  loop_control:
+    loop_var: filename
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: Create certmanager CRDs.
+  k8s:
+    state: present
+    src: "{{ role_path }}/latest_certmanager_files_from_github/{{ filename }}.yaml"
+  with_items:
+    - cert-manager
+  loop_control:
+    loop_var: filename
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: sleep for 15 seconds and continue
+  wait_for: timeout=15
+  delegate_to: localhost
+  when: latest_certmanager_files_from_github.stat.exists == False 
+
+- name: Verify cert-manager chart
+  command: helm list cert-manager 
+  register: helm_certmanager_already_installed
+  changed_when: False
+  # changed_when: "'already installed' not in helm_init_result.stdout"
+
+- name: Add hetstack helm repo
+  command: helm repo add jetstack https://charts.jetstack.io
+  when: "'' == helm_certmanager_already_installed.stdout"
+
+- name: Update helm repos
+  command: helm repo update
+  when: "'' == helm_certmanager_already_installed.stdout"
+
+- name: Install cert-manager helm char
+  command: helm install --name cert-manager --namespace cert-manager --version {{ certmanager_version }} jetstack/cert-manager
+  register: helm_certmanager_installation
+  ignore_errors: yes
+  when: "'' == helm_certmanager_already_installed.stdout"
+
+- name: sleep for 5 seconds and continue
+  wait_for: timeout=5
+  delegate_to: localhost
+  when: "'' == helm_certmanager_already_installed.stdout and '' == helm_certmanager_installation.stdout"
+
+- name: Purged failed installation of cert-manager helm char
+  command: helm delete cert-manager --purge
+  when: "'' == helm_certmanager_already_installed.stdout and helm_certmanager_installation.rc != 0"
+
+- name: sleep for 5 seconds and continue
+  wait_for: timeout=5
+  delegate_to: localhost
+  when: "'' == helm_certmanager_already_installed.stdout and helm_certmanager_installation.rc != 0"
+
+- name: Reinstall cert-manager helm char
+  command: helm install --name cert-manager --namespace cert-manager --version {{ certmanager_version }} jetstack/cert-manager
+  when: "'' == helm_certmanager_already_installed.stdout and helm_certmanager_installation.rc != 0"
+
+- name: sleep for 60 seconds and continue
+  wait_for: timeout=60
+  delegate_to: localhost
+
+- name: Ensure temp letsencrypt exists.
+  file:
+    path: "{{ temp }}/letsencrypt"
+    state: directory
+
+- name: Render letsencrypt Cluster Issuer template
+  template:
+    src: "{{ filename }}.yaml.j2"
+    dest: "{{ temp }}/letsencrypt/{{ filename }}.yaml"
+  with_items:
+    - SelfsignedClusterIssuer
+    - StagingClusterIssuer
+    - ProductionClusterIssuer
+  loop_control:
+    loop_var: filename
+
+- name: Do we have a cloud dns service account ready
+  stat:
+    path: "{{ role_path }}/../../secrets/sa-clouddns.json"
+  register: clouddns_service_account
+
+- name: Create service account
+  shell: kubectl get secret sa-clouddns -n cert-manager || kubectl create secret generic sa-clouddns --from-file="{{ role_path }}/../../secrets/sa-clouddns.json" -n cert-manager
+  when: clouddns_service_account.stat.exists == True 
+
+- name: Create cluster issuers
+  k8s:
+    state: present
+    src: "{{ temp }}/letsencrypt/{{ filename }}.yaml"
+  with_items:
+    - SelfsignedClusterIssuer
+    - StagingClusterIssuer
+    - ProductionClusterIssuer
+  loop_control:
+    loop_var: filename
+  when: clouddns_service_account.stat.exists == True 
+
+

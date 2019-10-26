@@ -1,0 +1,22 @@
+- name: Ensure latest_certmanager_files_from_github exists.
+  file:
+    path: "{{ temp }}/certificates"
+    state: directory
+
+- name: Render letsencrypt Cluster Issuer template
+  template:
+    src: "{{ filename }}.yaml.j2"
+    dest: "{{ temp }}/certificates/{{ filename }}.yaml"
+  with_items:
+    - certificates
+  loop_control:
+    loop_var: filename
+
+- name: Create certificates
+  k8s:
+    state: present
+    src: "{{ temp }}/certificates/{{ filename }}.yaml"
+  with_items:
+    - certificates
+  loop_control:
+    loop_var: filename

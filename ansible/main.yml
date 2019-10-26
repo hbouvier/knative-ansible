@@ -7,7 +7,15 @@
       tags: [helm]
     - role: istio
       tags: [istio]
+    - role: cert-manager
+      tags: [cert-manager]
+
+    - role: certificates
+      tags: [certificates]
+
     - role: kafka
       tags: [kafka]
     - role: knative
       tags: [knative]
+    - role: filebeat
+      tags: [filebeat]

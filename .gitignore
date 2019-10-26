@@ -1,1 +1,4 @@
 .env/
+secrets/
+ansible/roles/istio/latest_istio_files_from_github/
+ansible/roles/cert-manager/latest_certmanager_files_from_github/

@@ -1,0 +1,23 @@
+- name: Ensure /tmp/filebeat exists.
+  file:
+    path: "{{ temp }}/filebeat"
+    state: directory
+
+- name: Render filebeat template
+  template:
+    src: "{{ filename }}.yaml.j2"
+    dest: "{{ temp }}/filebeat/{{ filename }}.yaml"
+  with_items:
+    - filebeat
+  loop_control:
+    loop_var: filename
+
+- name: Create filebeat
+  k8s:
+    state: present
+    namespace: knative-monitoring
+    src: "{{ temp }}/filebeat/{{ filename }}.yaml"
+  with_items:
+    - filebeat
+  loop_control:
+    loop_var: filename
