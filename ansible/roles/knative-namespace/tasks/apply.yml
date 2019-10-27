@@ -20,19 +20,37 @@
     - namespace
     # - 200-broker-clusterrole
 
-# - name: KNative service accounts
-#   k8s:
-#     state: present
-#     definition:
-#       apiVersion: v1
-#       kind: ServiceAccount
-#       metadata:
-#         name: "{{ item }}"
-#         namespace: "{{ namespace }}"
-#   with_items:
-#     - eventing-broker-ingress
-#     - eventing-broker-filter
+- name: KNative service accounts
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: "{{ item }}"
+        namespace: "{{ namespace }}"
+  with_items:
+    - eventing-broker-ingress
+    - eventing-broker-filter
 
+#####################################################################
+# kubectl -n default create rolebinding eventing-broker-ingress \
+#   --clusterrole=eventing-broker-ingress \
+#   --user=eventing-broker-ingress
+# kubectl -n default create rolebinding eventing-broker-filter \
+#   --clusterrole=eventing-broker-filter \
+#   --serviceaccount=default:eventing-broker-filter
+- name: cluster role binding
+  shell: |
+    kubectl -n {{ namespace }} get rolebinding {{ item }} || kubectl -n {{ namespace }} create rolebinding {{ item }} \
+      --clusterrole={{ item }} \
+      --serviceaccount={{ namespace }}:{{ item }}
+  with_items:
+    - eventing-broker-ingress
+    - eventing-broker-filter
+
+
+#######################################################################
 # - name: cluster role binding
 #   shell: |
 #     kubectl -n {{ namespace }} get rolebinding {{ item }} || kubectl -n {{ namespace }} create rolebinding {{ item }} \

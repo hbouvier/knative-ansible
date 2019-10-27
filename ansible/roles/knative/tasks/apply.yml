@@ -47,7 +47,6 @@
     - kafka-source
   loop_control:
     loop_var: manifest
-  when: knative.stat.exists == False 
 
 - name: Create knative CRDs.
   command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
@@ -92,6 +91,10 @@
     - kafka-source
   loop_control:
     loop_var: filename
+  when: kafka_installed.rc == 0
+
+- name: Patch Knative eventing kafka configuration
+  command: kubectl -n knative-eventing patch configmap/config-kafka --type merge -p '{"data":{"bootstrapServers":"standalone-kafka-bootstrap.kafka:9092"}}'
   when: kafka_installed.rc == 0
 
 - name: Ensure /tmp/knative exists.
