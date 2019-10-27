@@ -1,6 +1,56 @@
 ---
+- name: Ensure latest_knative_github exists.
+  file:
+    path: "{{ role_path }}/latest_knative_github"
+    state: directory
+
+- name: Do we already have the KNative manifests
+  stat:
+    path: "{{ role_path }}/latest_knative_github/serving.yaml2"
+  register: knative
+
+- name: Download KNative serving manifests
+  get_url:
+    url: https://github.com/knative/serving/releases/download/{{ knative_version }}/{{ item }}.yaml
+    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    mode: '0440'
+  with_items:
+    - serving
+    - monitoring
+  when: knative.stat.exists == False 
+
+- name: Download KNative eventing manifests
+  get_url:
+    url: https://github.com/knative/eventing/releases/download/{{ knative_version }}/{{ item }}.yaml
+    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    mode: '0440'
+  with_items:
+    - release
+  when: knative.stat.exists == False 
+
+- name: Download KNative eventing kafka manifests
+  get_url:
+    url: https://github.com/knative/eventing-contrib/releases/download/{{ knative_version }}/{{ item }}.yaml
+    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    mode: '0440'
+  with_items:
+    - kafka-channel
+    - kafka-source
+  when: knative.stat.exists == False 
+
+- include: common/clean-manifest.yaml
+  with_items:
+    - serving
+    - monitoring
+    - release
+    - kafka-channel
+    - kafka-source
+  loop_control:
+    loop_var: manifest
+  when: knative.stat.exists == False 
+
 - name: Create knative CRDs.
-  command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/files/{{ filename }}.yaml"
+  command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
   with_items:
     - serving
     - release
@@ -19,7 +69,7 @@
 - name: Create knative serving, eventing and monitoring.
   k8s:
     state: present
-    src: "{{ role_path }}/files/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
   with_items:
     - serving
     - release
@@ -36,7 +86,7 @@
 - name: Knative Kafka eventing channel and source
   k8s:
     state: present
-    src: "{{ role_path }}/files/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
   with_items:
     - kafka-channel
     - kafka-source
@@ -48,6 +98,7 @@
   file:
     path: "{{ temp }}/knative"
     state: directory
+  when: knative_certmanager == True
 
 - name: Render letsencrypt Cluster Issuer template
   template:
@@ -58,6 +109,7 @@
     - ingress-gateway
   loop_control:
     loop_var: filename
+  when: knative_certmanager == True
 
 - name: Patch knative resources
   k8s:
@@ -68,3 +120,5 @@
     - ingress-gateway
   loop_control:
     loop_var: filename
+  when: knative_certmanager == True
+

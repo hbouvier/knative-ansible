@@ -1,0 +1,111 @@
+---
+- name: Ensure template directory exists.
+  file:
+    path: "{{ temp }}/knative-namespace"
+    state: directory
+
+- name: Render KNative namespace templates
+  template:
+    src: "{{ item }}.yaml.j2"
+    dest: "{{ temp }}/knative-namespace/{{ item }}.yaml"
+  with_items:
+    - namespace
+    # - 200-broker-clusterrole
+
+- name: Create the namespace
+  k8s:
+    state: present
+    src: "{{ temp }}/knative-namespace/{{ item }}.yaml"
+  with_items:
+    - namespace
+    # - 200-broker-clusterrole
+
+# - name: KNative service accounts
+#   k8s:
+#     state: present
+#     definition:
+#       apiVersion: v1
+#       kind: ServiceAccount
+#       metadata:
+#         name: "{{ item }}"
+#         namespace: "{{ namespace }}"
+#   with_items:
+#     - eventing-broker-ingress
+#     - eventing-broker-filter
+
+# - name: cluster role binding
+#   shell: |
+#     kubectl -n {{ namespace }} get rolebinding {{ item }} || kubectl -n {{ namespace }} create rolebinding {{ item }} \
+#       --clusterrole={{ item }} \
+#       --serviceaccount={{ namespace }}:{{ item }}
+#   with_items:
+#     - eventing-broker-ingress
+#     - eventing-broker-filter
+
+# - name: cluster role binding
+#   shell: |
+#     kubectl -n knative-eventing get rolebinding eventing-config-reader-{{ namespace }}-{{ item }} || kubectl -n knative-eventing create rolebinding eventing-config-reader-{{ namespace }}-{{ item }} \
+#       --clusterrole=eventing-config-reader \
+#       --serviceaccount={{ namespace }}:{{ item }}
+#   with_items:
+#     - eventing-broker-ingress
+#     - eventing-broker-filter
+
+##########################################################################
+#
+# kubectl -n default create serviceaccount eventing-broker-ingress
+# kubectl -n default create serviceaccount eventing-broker-filter
+
+# kubectl -n default create rolebinding eventing-broker-ingress \
+#   --clusterrole=eventing-broker-ingress \
+#   --serviceaccount=default:eventing-broker-ingress
+# kubectl -n default create rolebinding eventing-broker-filter \
+#   --clusterrole=eventing-broker-filter \
+#   --serviceaccount=default:eventing-broker-filter
+
+# wget https://github.com/knative/eventing/blob/master/config/200-broker-clusterrole.yaml
+# kubectl -n knative-eventing create rolebinding eventing-config-reader-default-eventing-broker-ingress \
+#   --clusterrole=eventing-config-reader \
+#   --serviceaccount=default:eventing-broker-ingress
+# kubectl -n knative-eventing create rolebinding eventing-config-reader-default-eventing-broker-filter \
+#   --clusterrole=eventing-config-reader \
+#   --serviceaccount=default:eventing-broker-filter
+# kubectl config set-context --current --namespace=${NAMESPACE}
+
+# - name: KNative role bindings
+#   k8s:
+#     state: present
+#     definition:
+#       apiVersion: v1
+#       kind: rolebinding
+#       metadata:
+#         name: "{{ item }}"
+#         namespace: "{{ namespace }}"
+#   with_items:
+#     - eventing-broker-ingress
+#     - eventing-broker-filter
+
+# - name: Ensure latest_eventing_config_github exists.
+#   file:
+#     path: "{{ role_path }}/{{ item }}"
+#     state: directory
+#   with_items:
+#     - latest_eventing_config_github
+
+# - name: Do we already have the config files
+#   stat:
+#     path: "{{ role_path }}/latest_eventing_config_github/200-broker-clusterrole.yaml"
+#   register: brokerClusterrole
+
+# - name: Download istio 200-broker-clusterrole.yaml script
+#   get_url:
+#     url: https://github.com/knative/eventing/blob/master/config/200-broker-clusterrole.yaml
+#     dest: "{{ role_path }}/latest_eventing_config_github/200-broker-clusterrole.yaml"
+#     mode: '0440'
+#   when: brokerClusterrole.stat.exists == False 
+
+# - name: Execute istio getLatestIstio script
+#   k8s:
+#     state: present
+#     src: "{{ role_path }}/latest_eventing_config_github/200-broker-clusterrole.yaml"
+#   when: brokerClusterrole.stat.exists == False 

@@ -1,0 +1,36 @@
+---
+- name: remove comments
+  replace:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '^#.*$'
+    replace: ''
+
+- name: remove null section
+  replace:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '^---\s*null\s*$'
+    replace: ''
+
+- name: add a sentinel value to allow us to remove the last yaml section
+  lineinfile:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '^# EOF SENTINEL$'
+    line: "# EOF SENTINEL"
+
+- name: remove empty lines
+  replace:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '^[\s\n]*$'
+    replace: ''
+
+- name: remove empty yaml sections
+  replace:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '-{3}(?:-{3}|[\n\s]*)*-{3}'
+    replace: '---'
+
+- name: remove last empty yaml section (with the sentinel)
+  replace:
+    path: "{{ role_path }}/latest_knative_github/{{ manifest }}.yaml"
+    regexp: '---[\n\s]*# EOF SENTINEL[\n\s]*$'
+    replace: ''

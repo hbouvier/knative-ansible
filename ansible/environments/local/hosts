@@ -16,6 +16,8 @@ clouddns_project=my-knative-gcp-project
 clouddns_secret_name=sa-clouddns
 clouddns_secret_filename=sa-clouddns.json
 
-; KNATIVE DOMAIN
+; KNATIVE
+knative_version=v0.9.0
 knative_domain=example.com
+knative_certmanager=True
 

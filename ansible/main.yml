@@ -19,3 +19,6 @@
       tags: [knative]
     - role: filebeat
       tags: [filebeat]
+
+    - role: knative-namespace
+      tags: [knative-namespace]
