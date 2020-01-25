@@ -97,7 +97,7 @@
   changed_when: False
   # changed_when: "'already installed' not in helm_init_result.stdout"
 
-- name: Add hetstack helm repo
+- name: Add jhetstack helm repo
   command: helm repo add jetstack https://charts.jetstack.io
   when: "'' == helm_certmanager_already_installed.stdout"
 

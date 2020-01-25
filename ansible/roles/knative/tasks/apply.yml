@@ -101,7 +101,7 @@
   file:
     path: "{{ temp }}/knative"
     state: directory
-  when: knative_certmanager == True
+  # when: knative_certmanager == True
 
 - name: Render letsencrypt Cluster Issuer template
   template:
@@ -112,16 +112,17 @@
     - ingress-gateway
   loop_control:
     loop_var: filename
-  when: knative_certmanager == True
+  # when: knative_certmanager == True
 
 - name: Patch knative resources
-  k8s:
-    state: present
-    src: "{{ temp }}/knative/{{ filename }}.yaml"
+  command: kubectl apply -f {{ temp }}/knative/{{ filename }}.yaml
+  # k8s:
+  #   state: present
+  #   src: "{{ temp }}/knative/{{ filename }}.yaml"
   with_items:
     - config-domain
     - ingress-gateway
   loop_control:
     loop_var: filename
-  when: knative_certmanager == True
+  # when: knative_certmanager == True
 

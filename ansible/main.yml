@@ -13,6 +13,10 @@
     - role: certificates
       tags: [certificates]
 
+    - role: zookeeper
+      namespace: "{{ zookeeper_namespace | default('zookeeper') }}"
+      tags: [zookeeper]
+
     - role: kafka
       tags: [kafka]
     - role: knative

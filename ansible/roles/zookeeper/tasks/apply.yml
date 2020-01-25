@@ -1,0 +1,30 @@
+---
+
+- name: Add bitnami helm repo
+  shell: helm repo list | grep bitnami || helm repo add bitnami https://charts.bitnami.com/bitnami
+  register: binami_repo_installation
+  changed_when: binami_repo_installation.stdout == '"bitnami" has been added to your repositories'
+
+- name: Fact was bitnami helm repo added
+  set_fact:
+    binami_repo_added: "{{ binami_repo_installation.stdout == '\"bitnami\" has been added to your repositories' }}"
+
+- name: Debug
+  debug:
+    var: binami_repo_added
+
+- name: Update helm repos
+  shell: helm repo update
+  when: binami_repo_added
+
+- name: Install zookeeper helm char
+  shell: |
+    helm list | grep zookeeper || \
+    helm install --name zookeeper --namespace {{ namespace }} --version {{ zookeeper_version }} bitnami/zookeeper
+  register: zookeeper_helm_installation_result
+  changed_when: "\"{{ zookeeper_helm_installation_result.stdout_lines[0] | regex_search('^([^\\s]+)', '\\1') | first }}\" != \"zookeeper\""
+
+- name: Wait for zookeeper to be ready.
+  shell: kubectl -n {{ namespace }} wait pod/zookeeper-0 --for=condition=Ready --timeout=300s
+  register: zookeeper
+  changed_when: False

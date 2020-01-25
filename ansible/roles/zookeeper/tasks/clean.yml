@@ -1,0 +1,14 @@
+---
+
+- name: clean zookeeper
+  shell: helm delete zookeeper --purge
+  ignore_errors: true
+
+# - name: "cleaning up the environment {{environment}}"
+#   pause: prompt='Are you sure? (ENTER to continue, a to abort'
+#   register: result
+
+- name: clean zookeeper PVC
+  shell: kubectl -n {{ namespace }} delete pvc data-zookeeper-0
+  when: delete_pvc
+  ignore_errors: true
