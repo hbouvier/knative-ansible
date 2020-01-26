@@ -1,36 +1,37 @@
-- name: Create Tiller ServiceAccount.
-  k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ServiceAccount
-      metadata:
-        name: tiller
-        namespace: kube-system
-
-- name: cluster role binding
-  command: kubectl create clusterrolebinding tiller \
-    --clusterrole cluster-admin \
-    --serviceaccount=kube-system:tiller
-  when: False
-
-# - name: Apply Tiller RBAC definition.
+---
+# - name: Create Tiller ServiceAccount.
 #   k8s:
 #     state: present
-#     definition: "{{ lookup('file', 'files/tiller-rbac.yml') | from_yaml }}"
+#     definition:
+#       apiVersion: v1
+#       kind: ServiceAccount
+#       metadata:
+#         name: tiller
+#         namespace: kube-system
 
-- name: Set up Helm and Tiller.
-  command: helm init --service-account tiller
-  register: helm_init_result
-  changed_when: "'already installed' not in helm_init_result.stdout"
+# - name: cluster role binding
+#   command: kubectl create clusterrolebinding tiller \
+#     --clusterrole cluster-admin \
+#     --serviceaccount=kube-system:tiller
+#   when: False
 
-- name: Get Tiller's ClusterIP.
-  k8s:
-    api_version: v1
-    kind: Service
-    name: tiller-deploy
-    namespace: kube-system
-  register: tiller_service
+# # - name: Apply Tiller RBAC definition.
+# #   k8s:
+# #     state: present
+# #     definition: "{{ lookup('file', 'files/tiller-rbac.yml') | from_yaml }}"
+
+# - name: Set up Helm and Tiller.
+#   command: helm init --service-account tiller
+#   register: helm_init_result
+#   changed_when: "'already installed' not in helm_init_result.stdout"
+
+# - name: Get Tiller's ClusterIP.
+#   k8s:
+#     api_version: v1
+#     kind: Service
+#     name: tiller-deploy
+#     namespace: kube-system
+#   register: tiller_service
 
 # - name: Set the Helm host and port.
 #   set_fact:

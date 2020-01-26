@@ -1,18 +1,18 @@
 ---
 - name: Ensure latest_knative_github exists.
   file:
-    path: "{{ role_path }}/latest_knative_github"
+    path: "{{ role_path }}/latest_knative_github/{{ knative_version }}"
     state: directory
 
 - name: Do we already have the KNative manifests
   stat:
-    path: "{{ role_path }}/latest_knative_github/serving.yaml2"
+    path: "{{ role_path }}/latest_knative_github/{{ knative_version }}/serving.yaml2"
   register: knative
 
 - name: Download KNative serving manifests
   get_url:
     url: https://github.com/knative/serving/releases/download/{{ knative_version }}/{{ item }}.yaml
-    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    dest: "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ item }}.yaml"
     mode: '0440'
   with_items:
     - serving
@@ -22,16 +22,16 @@
 - name: Download KNative eventing manifests
   get_url:
     url: https://github.com/knative/eventing/releases/download/{{ knative_version }}/{{ item }}.yaml
-    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    dest: "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ item }}.yaml"
     mode: '0440'
   with_items:
-    - release
+    - eventing
   when: knative.stat.exists == False 
 
 - name: Download KNative eventing kafka manifests
   get_url:
     url: https://github.com/knative/eventing-contrib/releases/download/{{ knative_version }}/{{ item }}.yaml
-    dest: "{{ role_path }}/latest_knative_github/{{ item }}.yaml"
+    dest: "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ item }}.yaml"
     mode: '0440'
   with_items:
     - kafka-channel
@@ -42,17 +42,18 @@
   with_items:
     - serving
     - monitoring
-    - release
+    - eventing
     - kafka-channel
     - kafka-source
   loop_control:
     loop_var: manifest
 
 - name: Create knative CRDs.
-  command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
+  command:    kubectl apply --selector knative.dev/crd-install=true -f "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ filename }}.yaml"
   with_items:
     - serving
-    - release
+    - eventing
+    # - monitoring
   loop_control:
     loop_var: filename
   register: knative_crd
@@ -68,10 +69,10 @@
 - name: Create knative serving, eventing and monitoring.
   k8s:
     state: present
-    src: "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ filename }}.yaml"
   with_items:
     - serving
-    - release
+    - eventing
     - monitoring
   loop_control:
     loop_var: filename
@@ -85,7 +86,7 @@
 - name: Knative Kafka eventing channel and source
   k8s:
     state: present
-    src: "{{ role_path }}/latest_knative_github/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_knative_github/{{ knative_version }}/{{ filename }}.yaml"
   with_items:
     - kafka-channel
     - kafka-source

@@ -1,4 +1,5 @@
 ---
+# Setup the Directory structure.
 - name: Ensure latest_istio_files_from_github exists.
   file:
     path: "{{ role_path }}/{{ item }}"
@@ -9,18 +10,20 @@
 
 - name: Do we already have the istio files
   stat:
-    path: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio"
+    path: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio-{{istio_version}}"
   register: getLastestIstio
 
+# Download the dowload script from github
 - name: Download istio getLatestIstio script
   get_url:
     url: https://git.io/getLatestIstio
-    dest: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio"
+    dest: "{{ role_path }}/latest_istio_files_from_github/getLastestIstio-{{istio_version}}"
     mode: '0740'
   when: getLastestIstio.stat.exists == False 
 
+# Download the CRDs
 - name: Execute istio getLatestIstio script
-  shell: "ISTIO_VERSION={{istio_version}} ./getLastestIstio"
+  shell: "ISTIO_VERSION={{istio_version}} ./getLastestIstio-{{istio_version}}"
   args:
     chdir: "{{ role_path }}/latest_istio_files_from_github"
   when: getLastestIstio.stat.exists == False 
@@ -31,6 +34,11 @@
     chdir: "{{ role_path }}/latest_istio_files_from_github/istio-{{istio_version}}"
   when: getLastestIstio.stat.exists == False 
 
+
+
+
+
+# Generate the istio templates
 - name: Generate istio templates
   shell: "{{ item }}"
   args:
@@ -38,7 +46,7 @@
   with_items:
     - helm template --namespace=istio-system
         --set gateways.custom-gateway.autoscaleMin=1
-        --set gateways.custom-gateway.autoscaleMax=1
+        --set gateways.custom-gateway.autoscaleMax=2
         --set gateways.custom-gateway.cpu.targetAverageUtilization=60
         --set gateways.custom-gateway.labels.app='cluster-local-gateway'
         --set gateways.custom-gateway.labels.istio='cluster-local-gateway'

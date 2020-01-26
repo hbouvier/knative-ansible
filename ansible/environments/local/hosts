@@ -2,22 +2,5 @@
 master ansible_connection=local ansible_host=127.0.0.1
 
 [k8s:vars]
-ansible_python_interpreter=${HOME}/Sources/knative/knative-ansible/.env/bin/python
-
-; ISTIO
-istio_version=1.3.3
-
-; CERT-MANAGER
-certmanager_version=v0.11.0
-certmanager_email=email@example.com
-
-; CLOUD DNS
-clouddns_project=my-knative-gcp-project
-clouddns_secret_name=sa-clouddns
-clouddns_secret_filename=sa-clouddns.json
-
-; KNATIVE
-knative_version=v0.9.0
-knative_domain=example.com
-knative_certmanager=True
-
+; ansible_python_interpreter=${HOME}/Sources/knative/knative-ansible/.env/bin/python
+ansible_python_interpreter=/usr/local/bin/python

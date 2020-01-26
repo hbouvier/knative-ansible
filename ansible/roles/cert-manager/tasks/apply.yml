@@ -2,12 +2,12 @@
 
 - name: Do we already have the certmanager CRDS files
   stat:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/cert-manager.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/cert-manager.yaml"
   register: latest_certmanager_files_from_github
 
 - name: Ensure latest_certmanager_files_from_github exists.
   file:
-    path: "{{ role_path }}/{{ item }}"
+    path: "{{ role_path }}/{{ item }}/{{ certmanager_version }}"
     state: directory
   with_items:
     - latest_certmanager_files_from_github
@@ -16,13 +16,13 @@
 - name: Download certmanager CRDs
   get_url:
     url: https://github.com/jetstack/cert-manager/releases/download/{{ certmanager_version }}/cert-manager.yaml
-    dest: "{{ role_path }}/latest_certmanager_files_from_github/cert-manager.yaml"
+    dest: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/cert-manager.yaml"
     mode: '0440'
   when: latest_certmanager_files_from_github.stat.exists == False 
 
 - name: clean raw istio templates, remove comments
   replace:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ item }}.yaml"
     regexp: '^#.*$'
     replace: ''
   with_items:
@@ -31,7 +31,7 @@
 
 - name: Add a sentinel value to allow us to remove the last yaml section
   lineinfile:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ item }}.yaml"
     regexp: '^# EOF SENTINEL$'
     line: "# EOF SENTINEL"
   with_items:
@@ -41,7 +41,7 @@
 
 - name: clean raw istio templates, remove empty lines
   replace:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ item }}.yaml"
     regexp: '^[\s\n]*$'
     replace: ''
   with_items:
@@ -50,7 +50,7 @@
 
 - name: clean raw istio templates, remove empty yaml sections
   replace:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ item }}.yaml"
     regexp: '-{3}(?:-{3}|[\n\s]*)*-{3}'
     replace: '---'
   with_items:
@@ -59,7 +59,7 @@
 
 - name: clean raw istio templates, remove last empty yaml section (with the sentinel)
   replace:
-    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ item }}.yaml"
+    path: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ item }}.yaml"
     regexp: '---[\n\s]*# EOF SENTINEL[\n\s]*$'
     replace: ''
   with_items:
@@ -79,7 +79,7 @@
 - name: Create certmanager CRDs.
   k8s:
     state: present
-    src: "{{ role_path }}/latest_certmanager_files_from_github/{{ filename }}.yaml"
+    src: "{{ role_path }}/latest_certmanager_files_from_github/{{ certmanager_version }}/{{ filename }}.yaml"
   with_items:
     - cert-manager
   loop_control:
@@ -92,8 +92,9 @@
   when: latest_certmanager_files_from_github.stat.exists == False 
 
 - name: Verify cert-manager chart
-  command: helm list cert-manager 
+  shell: helm list | grep cert-manager 
   register: helm_certmanager_already_installed
+  ignore_errors: yes
   changed_when: False
   # changed_when: "'already installed' not in helm_init_result.stdout"
 
@@ -106,7 +107,7 @@
   when: "'' == helm_certmanager_already_installed.stdout"
 
 - name: Install cert-manager helm char
-  command: helm install --name cert-manager --namespace cert-manager --version {{ certmanager_version }} jetstack/cert-manager
+  command: helm install --namespace cert-manager --version {{ certmanager_version }} cert-manager jetstack/cert-manager
   register: helm_certmanager_installation
   ignore_errors: yes
   when: "'' == helm_certmanager_already_installed.stdout"
